@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enlock - Shared Files Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --enlock-blue: #1a3b5d;
+            --enlock-light-blue: #2a4b6d;
+        }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 50;
+        }
+        .active-tab {
+            background-color: var(--enlock-blue);
+            color: white;
+        }
+        .file-preview {
+            background-color: #f8f9fa;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e9ecef;
+        }
+        .secure-icon {
+            color: #4CAF50;
+        }
+        .table-row:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-[#1a3b5d] text-white p-4 fixed w-full z-10">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-2xl font-bold">Enlock</h1>
+                <div class="relative">
+                    <input type="search" placeholder="Search files..." class="bg-[#2a4b6d] px-4 py-2 rounded-lg w-64">
+                    <i class="bi bi-search absolute right-3 top-2.5"></i>
+                </div>
+            </div>
+            <button class="bg-blue-500 px-4 py-2 rounded-lg flex items-center gap-2">
+                <i class="bi bi-plus-lg"></i> Add New
+            </button>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="fixed left-0 top-16 h-full w-64 bg-white shadow-lg">
+        <div class="p-4 space-y-2">
+            <a href="#" class="block p-2 rounded hover:bg-gray-100">
+                <i class="bi bi-grid mr-2"></i> Dashboard
+            </a>
+            <a href="#" class="block p-2 rounded bg-[#1a3b5d] text-white">
+                <i class="bi bi-share mr-2"></i> Shared with Me
+            </a>
+            <a href="#" class="block p-2 rounded hover:bg-gray-100">
+                <i class="bi bi-folder mr-2"></i> Files & Folders
+            </a>
+            <a href="#" class="block p-2 rounded hover:bg-gray-100">
+                <i class="bi bi-file-text mr-2"></i> Documents
+            </a>
+            <a href="#" class="block p-2 rounded hover:bg-gray-100">
+                <i class="bi bi-image mr-2"></i> Images
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="ml-64 pt-20 p-6">
+        <!-- File Detail View (initially hidden) -->
+        <div id="fileDetailView" class="hidden">
+            <div class="flex items-center mb-6">
+                <button id="backButton" class="mr-3 text-gray-600 hover:text-[#1a3b5d]">
+                    <i class="bi bi-arrow-left text-xl"></i>
+                </button>
+                <h2 class="text-2xl font-bold">File Details</h2>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <!-- File Preview -->
+                    <div class="lg:w-2/3">
+                        <div class="file-preview rounded-lg mb-4 relative overflow-hidden">
+                            <div class="absolute top-4 right-4 bg-[#1a3b5d] text-white p-2 rounded-full shadow-md">
+                                <i class="bi bi-lock-fill"></i>
+                            </div>
+                            <div id="filePreviewContent" class="w-full h-full flex items-center justify-center">
+                                <!-- Preview content will be inserted here dynamically -->
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <a href="#" class="flex-1 bg-[#1a3b5d] text-white py-3 px-4 rounded-lg flex items-center justify-center gap-2">
+                                <i class="bi bi-download"></i> Download
+                            </a>
+                            <a href="#" class="flex-1 bg-gray-200 text-[#1a3b5d] py-3 px-4 rounded-lg flex items-center justify-center gap-2">
+                                <i class="bi bi-box-arrow-up-right"></i> Open
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- File Details -->
+                    <div class="lg:w-1/3 space-y-4">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 id="fileDetailName" class="text-xl font-bold"></h3>
+                                <div class="flex items-center text-green-600 mt-1">
+                                    <i class="bi bi-shield-check mr-1"></i>
+                                    <span class="text-sm">End-to-end encrypted</span>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="p-2 hover:bg-gray-100 rounded-full">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t border-b py-4 space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Type</span>
+                                <span id="fileDetailType" class="font-medium"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Size</span>
+                                <span id="fileDetailSize" class="font-medium"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Shared by</span>
+                                <span id="fileDetailSharedBy" class="font-medium"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Shared on</span>
+                                <span id="fileDetailDate" class="font-medium"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Expires</span>
+                                <span id="fileDetailExpires" class="font-medium text-yellow-600"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Permissions</span>
+                                <span id="fileDetailPermission" class="font-medium"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <h4 class="font-semibold">Share Management</h4>
+                            <button class="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-lg flex items-center">
+                                <i class="bi bi-pencil mr-2"></i> Edit Permissions
+                            </button>
+                            <button class="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-lg flex items-center">
+                                <i class="bi bi-person-plus mr-2"></i> Add People
+                            </button>
+                            <button class="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-lg flex items-center">
+                                <i class="bi bi-x-circle mr-2"></i> Revoke Access
+                            </button>
+                            <button class="w-full text-left py-2 px-3 hover:bg-gray-100 rounded-lg text-red-500 flex items-center">
+                                <i class="bi bi-trash mr-2"></i> Delete Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Access Logs -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-bold mb-4">Share History & Access Logs</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="text-left py-3 px-4">Date & Time</th>
+                                <th class="text-left py-3 px-4">User</th>
+                                <th class="text-left py-3 px-4">Action</th>
+                                <th class="text-left py-3 px-4">IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accessLogsTable">
+                            <!-- Access logs will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shared Files List View -->
+        <div id="sharedFilesView">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Shared with Me</h2>
+                <div class="flex gap-2">
+                    <button class="p-2 bg-white rounded active-tab" id="gridView">
+                        <i class="bi bi-grid-3x3-gap"></i>
+                    </button>
+                    <button class="p-2 bg-white rounded" id="listView">
+                        <i class="bi bi-list"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grid View -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="gridContainer">
+                <!-- File Cards will be dynamically inserted here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Share Modal -->
+    <div class="modal-backdrop" id="shareModal">
+        <div class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl w-[500px]">
+            <div class="p-6">
+                <h3 class="text-xl font-bold mb-4">Share File</h3>
+                <p class="text-gray-600 mb-4">document.pdf</p>
+
+                <!-- Tabs -->
+                <div class="flex mb-4 bg-gray-100 rounded">
+                    <button class="flex-1 py-2 px-4 rounded-l active-tab" data-tab="public">Public Share</button>
+                    <button class="flex-1 py-2 px-4 rounded-r" data-tab="private">Private Share</button>
+                </div>
+
+                <!-- Public Share Tab -->
+                <div id="publicTab" class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span>Password Protection</span>
+                        <label class="switch">
+                            <input type="checkbox" id="passwordToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <input type="password" placeholder="Enter password" class="w-full p-2 border rounded" id="passwordInput" disabled>
+                    
+                    <div>
+                        <label>Expiration</label>
+                        <select class="w-full p-2 border rounded">
+                            <option>1 day</option>
+                            <option>7 days</option>
+                            <option>30 days</option>
+                            <option>Custom</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>Download Limit</label>
+                        <input type="number" class="w-full p-2 border rounded" placeholder="No limit">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label>Permissions</label>
+                        <div class="space-x-4">
+                            <label><input type="checkbox" checked> View Only</label>
+                            <label><input type="checkbox"> Allow Download</label>
+                            <label><input type="checkbox"> Allow Edit</label>
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-[#1a3b5d] text-white py-2 rounded">Generate Link</button>
+                </div>
+
+                <!-- Private Share Tab (hidden by default) -->
+                <div id="privateTab" class="space-y-4 hidden">
+                    <div class="space-y-2" id="emailContainer">
+                        <div class="flex gap-2">
+                            <input type="email" placeholder="Enter email address" class="flex-1 p-2 border rounded">
+                            <select class="p-2 border rounded">
+                                <option>View</option>
+                                <option>Download</option>
+                                <option>Edit</option>
+                                <option>Full</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="text-blue-500" id="addMoreEmail">+ Add more</button>
+
+                    <div>
+                        <label>Expiration</label>
+                        <select class="w-full p-2 border rounded">
+                            <option>1 day</option>
+                            <option>7 days</option>
+                            <option>30 days</option>
+                            <option>Custom</option>
+                        </select>
+                    </div>
+
+                    <button class="w-full bg-[#1a3b5d] text-white py-2 rounded">Share</button>
+                </div>
+
+                <button class="w-full mt-4 py-2 text-gray-600" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data for shared files
+        const sharedFiles = [
+            { 
+                name: 'Project Proposal.pdf', 
+                type: 'pdf', 
+                size: '2.5 MB', 
+                date: '2023-10-15', 
+                sharedBy: 'John Doe', 
+                status: 'pending',
+                expires: '2023-11-15',
+                permission: 'View & Download',
+                accessLogs: [
+                    { datetime: '2023-10-15 14:30', user: 'John Doe', action: 'Shared', ip: '192.168.1.1' },
+                    { datetime: '2023-10-15 15:45', user: 'You', action: 'Viewed', ip: '192.168.1.2' }
+                ]
+            },
+            { 
+                name: 'Meeting Notes.docx', 
+                type: 'doc', 
+                size: '1.1 MB', 
+                date: '2023-10-14', 
+                sharedBy: 'Jane Smith', 
+                status: 'accepted',
+                expires: '2023-12-14',
+                permission: 'View Only',
+                accessLogs: [
+                    { datetime: '2023-10-14 09:15', user: 'Jane Smith', action: 'Shared', ip: '192.168.1.3' },
+                    { datetime: '2023-10-14 11:20', user: 'You', action: 'Viewed', ip: '192.168.1.2' }
+                ]
+            },
+            { 
+                name: 'Design Assets.zip', 
+                type: 'zip', 
+                size: '15.7 MB', 
+                date: '2023-10-13', 
+                sharedBy: 'Mike Johnson', 
+                status: 'accepted',
+                expires: '2023-11-13',
+                permission: 'Full Access',
+                accessLogs: [
+                    { datetime: '2023-10-13 16:00', user: 'Mike Johnson', action: 'Shared', ip: '192.168.1.4' },
+                    { datetime: '2023-10-13 17:30', user: 'You', action: 'Downloaded', ip: '192.168.1.2' }
+                ]
+            }
+        ];
+
+        // Populate grid view
+        function populateGrid() {
+            const container = document.getElementById('gridContainer');
+            container.innerHTML = '';
+            
+            sharedFiles.forEach((file, index) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-lg shadow cursor-pointer hover:bg-gray-50 transition';
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="bi bi-file-${file.type} text-2xl text-[#1a3b5d]"></i>
+                            <div>
+                                <h3 class="font-semibold">${file.name}</h3>
+                                <p class="text-sm text-gray-500">Shared by ${file.sharedBy}</p>
+                            </div>
+                        </div>
+                        <span class="text-sm px-2 py-1 rounded ${file.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                            ${file.status}
+                        </span>
+                    </div>
+                    <div class="mt-4 flex justify-between text-sm text-gray-500">
+                        <span>${file.size}</span>
+                        <span>${file.date}</span>
+                    </div>
+                `;
+                card.addEventListener('click', () => showFileDetail(index));
+                container.appendChild(card);
+            });
+        }
+
+        // Initialize
+        populateGrid();
+
+        // View switching
+        document.getElementById('gridView').addEventListener('click', function() {
+            document.getElementById('gridContainer').className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+            this.classList.add('active-tab');
+            document.getElementById('listView').classList.remove('active-tab');
+        });
+
+        document.getElementById('listView').addEventListener('click', function() {
+            document.getElementById('gridContainer').className = 'space-y-4';
+            this.classList.add('active-tab');
+            document.getElementById('gridView').classList.remove('active-tab');
+        });
+
+        // Show file detail view
+        function showFileDetail(index) {
+            const file = sharedFiles[index];
+            document.getElementById('sharedFilesView').classList.add('hidden');
+            document.getElementById('fileDetailView').classList.remove('hidden');
+            
+            // Populate file details
+            document.getElementById('fileDetailName').textContent = file.name;
+            document.getElementById('fileDetailType').textContent = file.type.toUpperCase();
+            document.getElementById('fileDetailSize').textContent = file.size;
+            document.getElementById('fileDetailSharedBy').textContent = file.sharedBy;
+            document.getElementById('fileDetailDate').textContent = file.date;
+            document.getElementById('fileDetailExpires').textContent = file.expires;
+            document.getElementById('fileDetailPermission').textContent = file.permission;
+            
+            // Generate file preview based on type
+            const previewContainer = document.getElementById('filePreviewContent');
+            if (file.type === 'pdf') {
+                previewContainer.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <i class="bi bi-file-pdf text-6xl text-red-500 mb-2"></i>
+                        <div class="bg-white p-4 border border-gray-200 rounded w-4/5">
+                            <div class="h-8 bg-gray-200 rounded mb-4"></div>
+                            <div class="h-4 bg-gray-200 rounded mb-2"></div>
+                            <div class="h-4 bg-gray-200 rounded mb-2"></div>
+                            <div class="h-4 bg-gray-200 rounded mb-2"></div>
+                            <div class="h-4 bg-gray-200 rounded mb-2 w-2/3"></div>
+                        </div>
+                    </div>
+                `;
+            } else if (file.type === 'doc') {
+                previewContainer.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <i class="bi bi-file-word text-6xl text-blue-500 mb-2"></i>
+                        <div class="bg-white p-4 border border-gray-200 rounded w-4/5">
+                            <div class="h-8 bg-gray-200 rounded mb-4"></div>
+                            <div class="h-4 bg-gray-200 rounded mb-2"></div>
+                            <div class="h-4 bg-gray-200 rounded mb-2"></div>
+                            <div class="h-4 bg-gray-200 rounded mb-2"></div>
+                            <div class="h-4 bg-gray-200 rounded mb-2 w-2/3"></div>
+                        </div>
+                    </div>
+                `;
+            } else if (file.type === 'zip') {
+                previewContainer.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <i class="bi bi-file-zip text-6xl text-yellow-500 mb-2"></i>
+                        <p class="text-gray-500">Archive Preview Not Available</p>
+                        <p class="text-sm text-gray-400">Download to view contents</p>
+                    </div>
+                `;
+            }
+            
+            // Populate access logs
+            const accessLogsTable = document.getElementById('accessLogsTable');
+            accessLogsTable.innerHTML = '';
+            file.accessLogs.forEach(log => {
+                const row = document.createElement('tr');
+                row.className = 'table-row';
+                row.innerHTML = `
+                    <td class="py-3 px-4">${log.datetime}</td>
+                    <td class="py-3 px-4">${log.user}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 rounded-full text-xs ${log.action === 'Downloaded' ? 'bg-blue-100 text-blue-700' : log.action === 'Viewed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}">
+                            ${log.action}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">${log.ip}</td>
+                `;
+                accessLogsTable.appendChild(row);
+            });
+        }
+        
+        // Back button functionality
+        document.getElementById('backButton').addEventListener('click', function() {
+            document.getElementById('fileDetailView').classList.add('hidden');
+            document.getElementById('sharedFilesView').classList.remove('hidden');
+        });
+
+        // Modal functionality
+        function showModal() {
+            document.getElementById('shareModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('shareModal').style.display = 'none';
+        }
+
+        // Tab switching
+        document.querySelectorAll('[data-tab]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('[data-tab]').forEach(t => t.classList.remove('active-tab'));
+                tab.classList.add('active-tab');
+                
+                if(tab.dataset.tab === 'public') {
+                    document.getElementById('publicTab').classList.remove('hidden');
+                    document.getElementById('privateTab').classList.add('hidden');
+                } else {
+                    document.getElementById('publicTab').classList.add('hidden');
+                    document.getElementById('privateTab').classList.remove('hidden');
+                }
+            });
+        });
+
+        // Password toggle functionality
+        document.getElementById('passwordToggle').addEventListener('change', function() {
+            document.getElementById('passwordInput').disabled = !this.checked;
+        });
+
+        // Add more email fields
+        document.getElementById('addMoreEmail').addEventListener('click', function() {
+            const container = document.getElementById('emailContainer');
+            const newEmailField = document.createElement('div');
+            newEmailField.className = 'flex gap-2';
+            newEmailField.innerHTML = `
+                <input type="email" placeholder="Enter email address" class="flex-1 p-2 border rounded">
+                <select class="p-2 border rounded">
+                    <option>View</option>
+                    <option>Download</option>
+                    <option>Edit</option>
+                    <option>Full</option>
+                </select>
+            `;
+            container.appendChild(newEmailField);
+        });
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
